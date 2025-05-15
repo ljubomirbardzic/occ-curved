@@ -63,7 +63,7 @@ import * as THREE from "three";
                   0.1,
                   20
                 );
-                camera[index].position.z = 2;
+                camera[index].position.z = 1.75;
 
                 renderer[index] = new THREE.WebGLRenderer({
                   alpha: true,
