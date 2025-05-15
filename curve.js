@@ -54,6 +54,8 @@ import * as THREE from "three";
                   images.push(img.getAttribute("src"));
                 });
 
+                removeSourceImages(el);
+
                 scene[index] = new THREE.Scene();
                 camera[index] = new THREE.PerspectiveCamera(
                   75,
@@ -191,5 +193,10 @@ import * as THREE from "three";
                   });
               }, 100);
             });
+            function removeSourceImages(el) {
+              el.querySelectorAll("img").forEach((img) => {
+                img.remove();
+              });
+            }
           });
         }
