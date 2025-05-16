@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import * as THREE from "three"
 
-export function CurvedImageSlider() {
+export function CurvedImageEffect() {
     useEffect(() => {
         if (window.curvedOnce) return
         window.curvedOnce = true
@@ -14,6 +14,8 @@ export function CurvedImageSlider() {
             currentContainerHeight = [],
             previousContainerHeight = [],
             planes = []
+
+        const geometries = []
 
         let isDragging = false
         let lastMouseX = 0
@@ -51,12 +53,6 @@ export function CurvedImageSlider() {
                     ] = el.clientHeight
                 } else {
                     currentContainerHeight[index] = el.clientHeight
-                    if (
-                        mobileHeightChage &&
-                        currentContainerHeight[index] ===
-                            previousContainerHeight[index]
-                    )
-                        return
                 }
                 previousContainerHeight[index] = currentContainerHeight[index]
 
@@ -92,6 +88,7 @@ export function CurvedImageSlider() {
                 el.appendChild(renderer[index].domElement)
 
                 const geometry = new THREE.PlaneGeometry(1.55, 1, 20, 20)
+                geometries[index] = geometry
                 const planeSpace =
                     getPlaneWidth(el, camera[index]) *
                     getWidth(options[index].gap)
@@ -200,38 +197,40 @@ export function CurvedImageSlider() {
         }
 
         let currentWidth,
-            previousWidth = window.innerWidth,
-            mobileHeightChage = false
-
-        const onResize = () => {
-            const newWidth = window.innerWidth
-            if (newWidth === previousWidth) return
-            currentWidth = newWidth
-            mobileHeightChage = newWidth < 768
-            init("resize")
-            previousWidth = newWidth
-        }
+            previousWidth = window.innerWidth
 
         init()
 
         let resizeTimeout
-        window.addEventListener("resize", () => {
+        function handleWindowResize() {
             clearTimeout(resizeTimeout)
             resizeTimeout = setTimeout(() => {
                 document.querySelectorAll(selector).forEach((el, index) => {
                     handleResize(el, index)
                 })
             }, 100)
-        })
+        }
 
-        window.addEventListener("mousedown", (e) => {
+        function handleMouseDown(e) {
             isDragging = true
             lastMouseX = e.clientX
             lastMouseY = e.clientY
-        })
-        window.addEventListener("mouseup", () => {
+        }
+
+        function handleMouseUp() {
             isDragging = false
-        })
+        }
+
+        function handleTouchStart(e) {
+            isDragging = true
+            const touch = e.touches[0]
+            lastMouseX = touch.clientX
+            lastMouseY = touch.clientY
+        }
+
+        function handleTouchEnd() {
+            isDragging = false
+        }
 
         function handleMouseMove(e) {
             if (!isDragging) return
@@ -241,16 +240,6 @@ export function CurvedImageSlider() {
             lastMouseX = e.clientX
             lastMouseY = e.clientY
         }
-
-        window.addEventListener("touchstart", (e) => {
-            isDragging = true
-            const touch = e.touches[0]
-            lastMouseX = touch.clientX
-            lastMouseY = touch.clientY
-        })
-        window.addEventListener("touchend", () => {
-            isDragging = false
-        })
 
         function handleTouchMove(e) {
             if (!isDragging || e.touches.length === 0) return
@@ -262,11 +251,17 @@ export function CurvedImageSlider() {
             lastMouseY = touch.clientY
         }
 
+        window.addEventListener("mousedown", handleMouseDown)
+        window.addEventListener("mouseup", handleMouseUp)
+        window.addEventListener("touchstart", handleTouchStart)
+        window.addEventListener("touchend", handleTouchEnd)
+
         window.addEventListener("mousemove", handleMouseMove)
         window.addEventListener("touchmove", handleTouchMove)
+        window.addEventListener("resize", handleWindowResize)
 
         return () => {
-            window.removeEventListener("resize", onResize)
+            window.removeEventListener("resize", handleWindowResize)
             window.removeEventListener("mousedown", handleMouseDown)
             window.removeEventListener("mouseup", handleMouseUp)
             window.removeEventListener("mousemove", handleMouseMove)
@@ -277,11 +272,14 @@ export function CurvedImageSlider() {
             document.querySelectorAll(selector).forEach((el, index) => {
                 if (planes[index]) {
                     planes[index].forEach((mesh) => {
-                        if (mesh.geometry) mesh.geometry.dispose()
                         if (mesh.material) mesh.material.dispose()
                         if (mesh.material.map) mesh.material.map.dispose()
                         scene[index]?.remove(mesh)
                     })
+                }
+
+                if (geometries[index]) {
+                    geometries[index].dispose()
                 }
 
                 if (renderer[index]) {
