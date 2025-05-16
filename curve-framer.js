@@ -18,6 +18,10 @@ export function CurvedImageSlider() {
         let isDragging = false
         let lastMouseX = 0
         let lastMouseY = 0
+        let deltaX = 0
+        let deltaY = 0
+        let moved = false
+
         let targetRotX = 0
         let targetRotY = 0
 
@@ -148,12 +152,31 @@ export function CurvedImageSlider() {
                         loadedTextures++
                         if (loadedTextures === totalTextures) {
                             function animateCamera() {
+                                if (moved) {
+                                    targetRotY += deltaX * 0.0002
+                                    targetRotX += deltaY * 0.0002
+                                    deltaX = 0
+                                    deltaY = 0
+                                    moved = false
+                                }
+
+                                // Clamp
+                                targetRotX = Math.max(
+                                    -MAX_ROT_X,
+                                    Math.min(MAX_ROT_X, targetRotX)
+                                )
+                                targetRotY = Math.max(
+                                    -MAX_ROT_Y,
+                                    Math.min(MAX_ROT_Y, targetRotY)
+                                )
+
                                 camera[index].rotation.x +=
                                     (targetRotX - camera[index].rotation.x) *
                                     0.05
                                 camera[index].rotation.y +=
                                     (targetRotY - camera[index].rotation.y) *
                                     0.05
+
                                 renderer[index].render(
                                     scene[index],
                                     camera[index]
@@ -206,26 +229,18 @@ export function CurvedImageSlider() {
             lastMouseX = e.clientX
             lastMouseY = e.clientY
         })
-
         window.addEventListener("mouseup", () => {
             isDragging = false
         })
 
-        window.addEventListener("mousemove", (e) => {
+        function handleMouseMove(e) {
             if (!isDragging) return
-
-            const deltaX = e.clientX - lastMouseX
-            const deltaY = e.clientY - lastMouseY
-
-            targetRotY += deltaX * 0.0002 // horizontal drag
-            targetRotX += deltaY * 0.0002 // vertical drag
-
-            targetRotX = Math.max(-MAX_ROT_X, Math.min(MAX_ROT_X, targetRotX))
-            targetRotY = Math.max(-MAX_ROT_Y, Math.min(MAX_ROT_Y, targetRotY))
-
+            deltaX += e.clientX - lastMouseX
+            deltaY += e.clientY - lastMouseY
+            moved = true
             lastMouseX = e.clientX
             lastMouseY = e.clientY
-        })
+        }
 
         window.addEventListener("touchstart", (e) => {
             isDragging = true
@@ -233,27 +248,22 @@ export function CurvedImageSlider() {
             lastMouseX = touch.clientX
             lastMouseY = touch.clientY
         })
-
         window.addEventListener("touchend", () => {
             isDragging = false
         })
 
-        window.addEventListener("touchmove", (e) => {
-            if (!isDragging) return
+        function handleTouchMove(e) {
+            if (!isDragging || e.touches.length === 0) return
             const touch = e.touches[0]
-
-            const deltaX = touch.clientX - lastMouseX
-            const deltaY = touch.clientY - lastMouseY
-
-            targetRotY += deltaX * 0.0005
-            targetRotX += deltaY * 0.0005
-
-            targetRotX = Math.max(-MAX_ROT_X, Math.min(MAX_ROT_X, targetRotX))
-            targetRotY = Math.max(-MAX_ROT_Y, Math.min(MAX_ROT_Y, targetRotY))
-
+            deltaX += touch.clientX - lastMouseX
+            deltaY += touch.clientY - lastMouseY
+            moved = true
             lastMouseX = touch.clientX
             lastMouseY = touch.clientY
-        })
+        }
+
+        window.addEventListener("mousemove", handleMouseMove)
+        window.addEventListener("touchmove", handleTouchMove)
 
         return () => {
             window.removeEventListener("resize", onResize)
