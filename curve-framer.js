@@ -58,7 +58,7 @@ export function CurvedImageEffect() {
 
                 options[index] = {
                     gap: 8,
-                    curve: 12,
+                    curve: 20,
                 }
 
                 const images = []
@@ -74,7 +74,7 @@ export function CurvedImageEffect() {
                     0.1,
                     20
                 )
-                camera[index].position.z = window.innerWidth <= 819 ? 2.75 : 2
+                camera[index].position.z = window.innerWidth <= 819 ? 2.5 : 1.7
 
                 renderer[index] = new THREE.WebGLRenderer({
                     alpha: true,
@@ -127,13 +127,18 @@ export function CurvedImageEffect() {
 
                         planes[index][i] = new THREE.Mesh(geometry, material)
 
+                        const maxStretchCompensation = 0.3 // tweak this value as needed
+
                         const columns = window.innerWidth <= 819 ? 2 : 3
                         const rows = Math.ceil(totalTextures / columns)
 
                         const planeWidth = 1.5
                         const planeHeight = 1
+                        const averageStretch = 1 - maxStretchCompensation / 2
                         const spacing =
-                            planeWidth * getWidth(options[index].gap)
+                            planeWidth *
+                            getWidth(options[index].gap) *
+                            averageStretch
                         const col = i % columns
                         const row = Math.floor(i / columns)
                         const offsetX = (columns - 1) / 2
@@ -143,6 +148,14 @@ export function CurvedImageEffect() {
                         planes[index][i].position.y =
                             -(row - offsetY) *
                             (planeHeight * getWidth(options[index].gap))
+
+                        const distanceFromCenter = Math.abs(col - offsetX)
+
+                        const stretchFactor =
+                            1 -
+                            distanceFromCenter *
+                                (maxStretchCompensation / offsetX)
+                        planes[index][i].scale.x = stretchFactor
 
                         scene[index].add(planes[index][i])
 
