@@ -6,6 +6,9 @@ export function CurvedImageEffect() {
         if (window.curvedOnce) return
         window.curvedOnce = true
 
+        let isMobile = window.innerWidth <= 819
+        let animationFrameId = null
+
         const selector = '[aria-label="curved-image"]'
         const scene = [],
             renderer = [],
@@ -46,7 +49,29 @@ export function CurvedImageEffect() {
         }
 
         const init = (e = "none") => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId)
+
+            const isMobile = window.innerWidth <= 819
             document.querySelectorAll(selector).forEach((el, index) => {
+                // CLEANUP: remove previous canvas and dispose planes if any
+                const existingCanvas = el.querySelector("canvas")
+                if (existingCanvas) el.removeChild(existingCanvas)
+
+                if (planes[index]) {
+                    planes[index].forEach((mesh) => {
+                        if (mesh.material) mesh.material.dispose()
+                        if (mesh.material.map) mesh.material.map.dispose()
+                        scene[index]?.remove(mesh)
+                    })
+                }
+
+                planes[index] = []
+
+                if (geometries[index]) {
+                    geometries[index].dispose()
+                    geometries[index] = null
+                }
+
                 if (e === "none") {
                     currentContainerHeight[index] = previousContainerHeight[
                         index
@@ -61,11 +86,19 @@ export function CurvedImageEffect() {
                     curve: 20,
                 }
 
-                const images = []
-                el.querySelectorAll("img").forEach((img) => {
-                    images.push(img.getAttribute("src"))
-                })
-                removeSourceImages(el)
+                let images = []
+                const imageElements = el.querySelectorAll("img")
+
+                if (imageElements.length > 0) {
+                    imageElements.forEach((img) => {
+                        images.push(img.getAttribute("src"))
+                    })
+                    el.dataset.imageList = JSON.stringify(images)
+                    removeSourceImages(el)
+                } else if (el.dataset.imageList) {
+                    images = JSON.parse(el.dataset.imageList)
+                }
+                planes[index] = []
 
                 scene[index] = new THREE.Scene()
                 camera[index] = new THREE.PerspectiveCamera(
@@ -74,7 +107,7 @@ export function CurvedImageEffect() {
                     0.1,
                     20
                 )
-                camera[index].position.z = window.innerWidth <= 819 ? 2.75 : 1.7
+                camera[index].position.z = isMobile ? 2.75 : 1.7
 
                 renderer[index] = new THREE.WebGLRenderer({
                     alpha: true,
@@ -127,7 +160,6 @@ export function CurvedImageEffect() {
 
                         planes[index][i] = new THREE.Mesh(geometry, material)
 
-                        const isMobile = window.innerWidth <= 819
                         const maxStretchCompensation = isMobile ? 0 : 0.3
 
                         const columns = window.innerWidth <= 819 ? 2 : 3
@@ -194,7 +226,8 @@ export function CurvedImageEffect() {
                                     scene[index],
                                     camera[index]
                                 )
-                                requestAnimationFrame(animateCamera)
+                                animationFrameId =
+                                    requestAnimationFrame(animateCamera)
                             }
                             animateCamera()
                         }
@@ -221,9 +254,17 @@ export function CurvedImageEffect() {
         function handleWindowResize() {
             clearTimeout(resizeTimeout)
             resizeTimeout = setTimeout(() => {
-                document.querySelectorAll(selector).forEach((el, index) => {
-                    handleResize(el, index)
-                })
+                const nowMobile = window.innerWidth <= 819
+
+                // Detect change in mobile/desktop layout
+                if (nowMobile !== isMobile) {
+                    isMobile = nowMobile
+                    init() // Recreate scenes with updated grid
+                } else {
+                    document.querySelectorAll(selector).forEach((el, index) => {
+                        handleResize(el, index)
+                    })
+                }
             }, 100)
         }
 
@@ -304,6 +345,10 @@ export function CurvedImageEffect() {
                     if (canvas) el.removeChild(canvas)
                 }
             })
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId)
+                animationFrameId = null
+            }
         }
     }, [])
 
