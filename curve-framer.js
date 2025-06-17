@@ -6,7 +6,7 @@ export function CurvedImageEffect() {
         if (window.curvedOnce) return
         window.curvedOnce = true
 
-        let isMobile = window.innerWidth <= 819
+        let isMobile = window.innerWidth <= 809
         let animationFrameId = null
 
         const selector = '[aria-label="curved-image"]'
@@ -51,7 +51,7 @@ export function CurvedImageEffect() {
         const init = (e = "none") => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId)
 
-            const isMobile = window.innerWidth <= 819
+            const isMobile = window.innerWidth <= 809
             document.querySelectorAll(selector).forEach((el, index) => {
                 // CLEANUP: remove previous canvas and dispose planes if any
                 const existingCanvas = el.querySelector("canvas")
@@ -96,9 +96,9 @@ export function CurvedImageEffect() {
                     el.dataset.imageList = JSON.stringify(images)
                     removeSourceImages(el)
                 } else if (el.dataset.imageList) {
-                    images = JSON.parse(el.dataset.imageList)
+                    const saved = el.dataset.imageList
+                    images = saved ? JSON.parse(saved) : []
                 }
-                planes[index] = []
 
                 scene[index] = new THREE.Scene()
                 camera[index] = new THREE.PerspectiveCamera(
@@ -107,7 +107,7 @@ export function CurvedImageEffect() {
                     0.1,
                     20
                 )
-                camera[index].position.z = isMobile ? 2.75 : 1.7
+                camera[index].position.z = isMobile ? 2.85 : 1.85
 
                 renderer[index] = new THREE.WebGLRenderer({
                     alpha: true,
@@ -120,12 +120,11 @@ export function CurvedImageEffect() {
                 if (previousCanvas) el.removeChild(previousCanvas)
                 el.appendChild(renderer[index].domElement)
 
-                const geometry = new THREE.PlaneGeometry(1.55, 1, 20, 20)
+                const geometry = new THREE.PlaneGeometry(1.6, 1, 20, 20)
                 geometries[index] = geometry
                 const planeSpace =
                     getPlaneWidth(el, camera[index]) *
                     getWidth(options[index].gap)
-                planes[index] = []
 
                 let loadedTextures = 0
                 const totalTextures = images.length
@@ -160,12 +159,12 @@ export function CurvedImageEffect() {
 
                         planes[index][i] = new THREE.Mesh(geometry, material)
 
-                        const maxStretchCompensation = isMobile ? 0 : 0.3
+                        const maxStretchCompensation = isMobile ? 0 : 0.29
 
-                        const columns = window.innerWidth <= 819 ? 2 : 3
+                        const columns = isMobile ? 2 : 3
                         const rows = Math.ceil(totalTextures / columns)
 
-                        const planeWidth = 1.5
+                        const planeWidth = 1.55
                         const planeHeight = 1
                         const averageStretch = 1 - maxStretchCompensation / 2
                         const spacing =
@@ -254,7 +253,7 @@ export function CurvedImageEffect() {
         function handleWindowResize() {
             clearTimeout(resizeTimeout)
             resizeTimeout = setTimeout(() => {
-                const nowMobile = window.innerWidth <= 819
+                const nowMobile = window.innerWidth <= 809
 
                 // Detect change in mobile/desktop layout
                 if (nowMobile !== isMobile) {
