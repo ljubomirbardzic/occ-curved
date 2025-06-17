@@ -74,7 +74,7 @@ export function CurvedImageEffect() {
                     0.1,
                     20
                 )
-                camera[index].position.z = window.innerWidth <= 819 ? 2.5 : 1.7
+                camera[index].position.z = window.innerWidth <= 819 ? 2.75 : 1.7
 
                 renderer[index] = new THREE.WebGLRenderer({
                     alpha: true,
@@ -127,7 +127,8 @@ export function CurvedImageEffect() {
 
                         planes[index][i] = new THREE.Mesh(geometry, material)
 
-                        const maxStretchCompensation = 0.3 // tweak this value as needed
+                        const isMobile = window.innerWidth <= 819
+                        const maxStretchCompensation = isMobile ? 0 : 0.3
 
                         const columns = window.innerWidth <= 819 ? 2 : 3
                         const rows = Math.ceil(totalTextures / columns)
@@ -151,11 +152,13 @@ export function CurvedImageEffect() {
 
                         const distanceFromCenter = Math.abs(col - offsetX)
 
-                        const stretchFactor =
-                            1 -
-                            distanceFromCenter *
-                                (maxStretchCompensation / offsetX)
-                        planes[index][i].scale.x = stretchFactor
+                        if (!isMobile) {
+                            const stretchFactor =
+                                1 -
+                                distanceFromCenter *
+                                    (maxStretchCompensation / offsetX)
+                            planes[index][i].scale.x = stretchFactor
+                        }
 
                         scene[index].add(planes[index][i])
 
