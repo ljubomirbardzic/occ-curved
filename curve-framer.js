@@ -20,19 +20,6 @@ export function CurvedImageEffect() {
 
         const geometries = []
 
-        let isDragging = false
-        let lastMouseX = 0
-        let lastMouseY = 0
-        let deltaX = 0
-        let deltaY = 0
-        let moved = false
-
-        let targetRotX = 0
-        let targetRotY = 0
-
-        const MAX_ROT_X = 0.025
-        const MAX_ROT_Y = 0.025
-
         const getWidth = (gap) => 1 + gap / 100
 
         const getPlaneWidth = (el, camera) => {
@@ -196,31 +183,6 @@ export function CurvedImageEffect() {
                         loadedTextures++
                         if (loadedTextures === totalTextures) {
                             function animateCamera() {
-                                if (moved) {
-                                    targetRotY += deltaX * 0.0002
-                                    targetRotX += deltaY * 0.0002
-                                    deltaX = 0
-                                    deltaY = 0
-                                    moved = false
-                                }
-
-                                // Clamp
-                                targetRotX = Math.max(
-                                    -MAX_ROT_X,
-                                    Math.min(MAX_ROT_X, targetRotX)
-                                )
-                                targetRotY = Math.max(
-                                    -MAX_ROT_Y,
-                                    Math.min(MAX_ROT_Y, targetRotY)
-                                )
-
-                                camera[index].rotation.x +=
-                                    (targetRotX - camera[index].rotation.x) *
-                                    0.05
-                                camera[index].rotation.y +=
-                                    (targetRotY - camera[index].rotation.y) *
-                                    0.05
-
                                 renderer[index].render(
                                     scene[index],
                                     camera[index]
@@ -267,63 +229,10 @@ export function CurvedImageEffect() {
             }, 100)
         }
 
-        function handleMouseDown(e) {
-            isDragging = true
-            lastMouseX = e.clientX
-            lastMouseY = e.clientY
-        }
-
-        function handleMouseUp() {
-            isDragging = false
-        }
-
-        function handleTouchStart(e) {
-            isDragging = true
-            const touch = e.touches[0]
-            lastMouseX = touch.clientX
-            lastMouseY = touch.clientY
-        }
-
-        function handleTouchEnd() {
-            isDragging = false
-        }
-
-        function handleMouseMove(e) {
-            if (!isDragging) return
-            deltaX += e.clientX - lastMouseX
-            deltaY += e.clientY - lastMouseY
-            moved = true
-            lastMouseX = e.clientX
-            lastMouseY = e.clientY
-        }
-
-        function handleTouchMove(e) {
-            if (!isDragging || e.touches.length === 0) return
-            const touch = e.touches[0]
-            deltaX += touch.clientX - lastMouseX
-            deltaY += touch.clientY - lastMouseY
-            moved = true
-            lastMouseX = touch.clientX
-            lastMouseY = touch.clientY
-        }
-
-        window.addEventListener("mousedown", handleMouseDown)
-        window.addEventListener("mouseup", handleMouseUp)
-        window.addEventListener("touchstart", handleTouchStart)
-        window.addEventListener("touchend", handleTouchEnd)
-
-        window.addEventListener("mousemove", handleMouseMove)
-        window.addEventListener("touchmove", handleTouchMove)
         window.addEventListener("resize", handleWindowResize)
 
         return () => {
             window.removeEventListener("resize", handleWindowResize)
-            window.removeEventListener("mousedown", handleMouseDown)
-            window.removeEventListener("mouseup", handleMouseUp)
-            window.removeEventListener("mousemove", handleMouseMove)
-            window.removeEventListener("touchstart", handleTouchStart)
-            window.removeEventListener("touchend", handleTouchEnd)
-            window.removeEventListener("touchmove", handleTouchMove)
 
             document.querySelectorAll(selector).forEach((el, index) => {
                 if (planes[index]) {
