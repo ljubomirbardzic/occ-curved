@@ -3,11 +3,11 @@ import * as THREE from "three"
 
 export function CurvedImageEffect() {
     useEffect(() => {
-        if (window.curvedOnce) return
-        window.curvedOnce = true
+        let hasInitializedOnce = false
 
         let isMobile = window.innerWidth <= 809
         let animationFrameId = null
+        let initTimeout = null
 
         const textureLoader = new THREE.TextureLoader()
 
@@ -30,6 +30,13 @@ export function CurvedImageEffect() {
             return el.clientWidth / width
         }
 
+        function fadeInCanvas(canvas) {
+            canvas.style.transition = "opacity 0.5s ease"
+            requestAnimationFrame(() => {
+                canvas.style.opacity = "1"
+            })
+        }
+
         function removeSourceImages(el) {
             const target = el.querySelector('[data-framer-name="images-grid"]')
             if (target) target.remove()
@@ -40,7 +47,6 @@ export function CurvedImageEffect() {
         const init = (e = "none") => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId)
 
-            const isMobile = window.innerWidth <= 809
             document.querySelectorAll(selector).forEach((el, index) => {
                 if (planes[index]) {
                     planes[index].forEach((mesh) => {
@@ -99,6 +105,14 @@ export function CurvedImageEffect() {
                 const previousCanvas = el.querySelector("canvas")
                 if (previousCanvas) el.removeChild(previousCanvas)
                 el.appendChild(renderer[index].domElement)
+
+                const canvas = renderer[index].domElement
+
+                if (!hasInitializedOnce) {
+                    fadeInCanvas(canvas)
+                } else {
+                    canvas.style.opacity = "1"
+                }
 
                 const planeSpace =
                     getPlaneWidth(el, camera[index]) *
@@ -202,8 +216,6 @@ export function CurvedImageEffect() {
         let currentWidth,
             previousWidth = window.innerWidth
 
-        init()
-
         let resizeTimeout
         function handleWindowResize() {
             clearTimeout(resizeTimeout)
@@ -222,9 +234,15 @@ export function CurvedImageEffect() {
             }, 100)
         }
 
+        initTimeout = setTimeout(() => {
+            init()
+            hasInitializedOnce = true
+        }, 1200)
+
         window.addEventListener("resize", handleWindowResize)
 
         return () => {
+            clearTimeout(initTimeout)
             window.removeEventListener("resize", handleWindowResize)
 
             document.querySelectorAll(selector).forEach((el, index) => {
