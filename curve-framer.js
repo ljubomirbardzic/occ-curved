@@ -45,6 +45,7 @@ export function CurvedImageEffect() {
         const sharedGeometry = new THREE.PlaneGeometry(1.6, 1, 8, 8)
 
         const init = (e = "none") => {
+            isMobile = window.innerWidth <= 809
             if (animationFrameId) cancelAnimationFrame(animationFrameId)
 
             document.querySelectorAll(selector).forEach((el, index) => {
@@ -255,6 +256,7 @@ export function CurvedImageEffect() {
                 }
 
                 if (renderer[index]) {
+                    renderer[index].clear()
                     renderer[index].dispose()
                     const canvas = el.querySelector("canvas")
                     if (canvas) el.removeChild(canvas)
