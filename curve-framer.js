@@ -9,6 +9,8 @@ export function CurvedImageEffect() {
         let isMobile = window.innerWidth <= 809
         let animationFrameId = null
 
+        const textureLoader = new THREE.TextureLoader()
+
         const selector = '[aria-label="curved-image"]'
         const scene = [],
             renderer = [],
@@ -17,8 +19,6 @@ export function CurvedImageEffect() {
             currentContainerHeight = [],
             previousContainerHeight = [],
             planes = []
-
-        const geometries = []
 
         const getWidth = (gap) => 1 + gap / 100
 
@@ -35,15 +35,13 @@ export function CurvedImageEffect() {
             if (target) target.remove()
         }
 
+        const sharedGeometry = new THREE.PlaneGeometry(1.6, 1, 8, 8)
+
         const init = (e = "none") => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId)
 
             const isMobile = window.innerWidth <= 809
             document.querySelectorAll(selector).forEach((el, index) => {
-                // CLEANUP: remove previous canvas and dispose planes if any
-                const existingCanvas = el.querySelector("canvas")
-                if (existingCanvas) el.removeChild(existingCanvas)
-
                 if (planes[index]) {
                     planes[index].forEach((mesh) => {
                         if (mesh.material) mesh.material.dispose()
@@ -53,11 +51,6 @@ export function CurvedImageEffect() {
                 }
 
                 planes[index] = []
-
-                if (geometries[index]) {
-                    geometries[index].dispose()
-                    geometries[index] = null
-                }
 
                 if (e === "none") {
                     currentContainerHeight[index] = previousContainerHeight[
@@ -107,8 +100,6 @@ export function CurvedImageEffect() {
                 if (previousCanvas) el.removeChild(previousCanvas)
                 el.appendChild(renderer[index].domElement)
 
-                const geometry = new THREE.PlaneGeometry(1.6, 1, 20, 20)
-                geometries[index] = geometry
                 const planeSpace =
                     getPlaneWidth(el, camera[index]) *
                     getWidth(options[index].gap)
@@ -117,8 +108,7 @@ export function CurvedImageEffect() {
                 const totalTextures = images.length
 
                 images.forEach((image, i) => {
-                    const loader = new THREE.TextureLoader()
-                    loader.load(image, (texture) => {
+                    textureLoader.load(image, (texture) => {
                         const material = new THREE.ShaderMaterial({
                             uniforms: {
                                 tex: { value: texture },
@@ -133,7 +123,7 @@ export function CurvedImageEffect() {
                   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
                   float x = worldPosition.x;
                   float bendFactor = curve / 100.0;
-                  newPosition.z -= pow(x, 2.0) * bendFactor * -0.5;
+                  newPosition.z += (x * x) * bendFactor * 0.5;
                   gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
                 }`,
                             fragmentShader: `
@@ -144,7 +134,10 @@ export function CurvedImageEffect() {
                 }`,
                         })
 
-                        planes[index][i] = new THREE.Mesh(geometry, material)
+                        planes[index][i] = new THREE.Mesh(
+                            sharedGeometry,
+                            material
+                        )
 
                         const maxStretchCompensation = isMobile ? 0 : 0.29
 
@@ -182,15 +175,15 @@ export function CurvedImageEffect() {
 
                         loadedTextures++
                         if (loadedTextures === totalTextures) {
-                            function animateCamera() {
+                            function renderLoop() {
                                 renderer[index].render(
                                     scene[index],
                                     camera[index]
                                 )
                                 animationFrameId =
-                                    requestAnimationFrame(animateCamera)
+                                    requestAnimationFrame(renderLoop)
                             }
-                            animateCamera()
+                            renderLoop()
                         }
                     })
                 })
@@ -243,16 +236,15 @@ export function CurvedImageEffect() {
                     })
                 }
 
-                if (geometries[index]) {
-                    geometries[index].dispose()
-                }
-
                 if (renderer[index]) {
                     renderer[index].dispose()
                     const canvas = el.querySelector("canvas")
                     if (canvas) el.removeChild(canvas)
                 }
             })
+
+            sharedGeometry.dispose()
+
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId)
                 animationFrameId = null
